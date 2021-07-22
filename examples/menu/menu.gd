@@ -58,7 +58,7 @@ func draw_all(_size = Vector2.ZERO):
 
 
 func draw_title():
-	tput.setaf(Color("#FFECA0"))
+	tput.setaf(tput.ANSIColor.bright_yellow)
 	tput.cup(row, 0)
 
 	for line in TITLE.split("\r"):
@@ -94,8 +94,8 @@ func draw_menu():
 		tput.cup(row, offset)
 
 		if selected_index == i:
-			tput.setab(Color("#FF786B"))
-			tput.setaf(Color.black)
+			tput.setab(tput.ANSIColor.red)
+			tput.setaf(tput.ANSIColor.black)
 
 		$Terminal.write("%s. %s" % [i + 1, item.name])
 

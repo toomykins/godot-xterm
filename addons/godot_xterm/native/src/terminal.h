@@ -40,6 +40,7 @@ public:
   void draw_background(int row, int col, Color bgcol, int width);
   void draw_foreground(int row, int col, char *ch, const tsm_screen_attr *attr,
                        Color fgcol);
+  Vector2 cursor_pos;
 
 public:
   static void _register_methods();
@@ -72,6 +73,12 @@ public:
     ALL,
     ALL_NEXT_FRAME,
   };
+
+  bool cursor_hollow;
+
+  bool blink_on;
+  void set_blink_on(bool on);
+  bool get_blink_on();
 
   Vector2 cell_size;
   int rows;

@@ -7,8 +7,6 @@
 tool
 extends Control
 
-const DefaultTheme = preload("../../themes/default.tres")
-
 signal data_sent(data)
 signal key_pressed(data, event)
 signal size_changed(new_size)
@@ -26,6 +24,10 @@ enum SelectionMode {
 	POINTER,
 }
 
+enum CursorStyle {
+	STEADY_BLOCK = 1,
+}
+
 export (UpdateMode) var update_mode = UpdateMode.AUTO setget set_update_mode
 
 var cols = 2
@@ -33,6 +35,9 @@ var rows = 2
 
 # If true, text in the terminal will be copied to the clipboard when selected.
 export (bool) var copy_on_selection
+
+# Cursor
+export (CursorStyle) var cursor_style = CursorStyle.STEADY_BLOCK
 
 # Bell
 # If muted, the "bell" signal will not be emitted when the bell "\u0007" character
@@ -46,11 +51,13 @@ export var bell_cooldown: float = 0.1
 export var blink_on_time: float = 0.6
 export var blink_off_time: float = 0.3
 
+var _default_theme: Theme = preload("../../themes/default.tres")
 var _viewport: Viewport = preload("./viewport.tscn").instance()
 var _native_terminal: Control = _viewport.get_node("Terminal")
 var _screen := TextureRect.new()
 
 var _bell_timer := Timer.new()
+var _blink_timer := Timer.new()
 
 var _selecting := false
 var _selecting_mode: int = SelectionMode.NONE
@@ -103,8 +110,7 @@ func copy_all() -> String:
 
 
 func _ready():
-	if theme:
-		_native_terminal.theme = theme
+	_update_theme()
 
 	_native_terminal.update_mode = update_mode
 	_native_terminal.connect("data_sent", self, "_on_data_sent")
@@ -121,6 +127,11 @@ func _ready():
 	_bell_timer.one_shot = true
 	add_child(_bell_timer)
 
+	_blink_timer.one_shot = true
+	_blink_timer.connect("timeout", self, "_on_blink")
+	add_child(_blink_timer)
+	_blink_timer.start(blink_on_time)
+
 	_selection_timer.wait_time = 0.05
 	_selection_timer.connect("timeout", self, "_on_selection_held")
 
@@ -131,10 +142,35 @@ func _ready():
 	_refresh()
 
 
+func _update_theme():
+	# Themes are not propagated through the Viewport, so in order for theme
+	# inheritance to work we can pass through the theme variables manually.
+	for color in _default_theme.get_color_list("Terminal"):
+		var c: Color
+		if has_color(color, "Terminal"):
+			c = get_color(color, "Terminal")
+		else:
+			c = _default_theme.get_color(color, "Terminal")
+		_native_terminal.add_color_override(color, c)
+	for font in _default_theme.get_font_list("Terminal"):
+		var f: Font
+		if has_font(font, "Terminal"):
+			f = get_font(font, "Terminal")
+		else:
+			if _default_theme.has_font(font, "Terminal"):
+				f = _default_theme.get_font(font, "Terminal")
+			else:
+				f = _default_theme.get_font(font, "Regular")
+		_native_terminal.add_font_override(font, f)
+	_native_terminal._update_theme()
+	_native_terminal._update_size()
+
+
 func _refresh():
-	_screen.update()
 	if update_mode == UpdateMode.AUTO:
 		_native_terminal.update_mode = UpdateMode.ALL_NEXT_FRAME
+	_native_terminal.update()
+	_screen.update()
 
 
 func _gui_input(event):
@@ -212,7 +248,16 @@ func _notification(what: int) -> void:
 			_viewport.size = rect_size
 			_refresh()
 		NOTIFICATION_THEME_CHANGED:
-			_native_terminal.theme = theme
+			_update_theme()
+			_refresh()
+		NOTIFICATION_WM_FOCUS_IN:
+			if has_focus():
+				continue
+		NOTIFICATION_WM_FOCUS_IN, NOTIFICATION_FOCUS_ENTER:
+			_native_terminal.cursor_hollow = false
+			_refresh()
+		NOTIFICATION_WM_FOCUS_OUT, NOTIFICATION_FOCUS_EXIT:
+			_native_terminal.cursor_hollow = true
 			_refresh()
 
 
@@ -237,8 +282,12 @@ func _on_bell():
 			_bell_timer.start(bell_cooldown)
 
 
-func _on_player_finished(player: AudioStreamPlayer):
-	player.queue_free()
+func _on_blink():
+	var blink_on = not _native_terminal.blink_on
+	_blink_timer.start(blink_on_time if blink_on else blink_off_time)
+	yield(VisualServer, "frame_pre_draw")
+	_native_terminal.blink_on = blink_on
+	_native_terminal.update()
 
 
 func _mouse_to_cell(pos: Vector2) -> Vector2:

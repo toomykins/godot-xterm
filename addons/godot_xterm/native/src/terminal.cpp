@@ -256,18 +256,42 @@ static int text_draw_cb(struct tsm_screen *con, uint64_t id, const uint32_t *ch,
   if (width < 1) // No foreground or background to draw.
     return 0;
 
+  Color fg, bg;
   std::pair<Color, Color> color_pair = terminal->get_cell_colors(attr);
-  terminal->draw_background(row, col, color_pair.first, width);
 
-  if (len < 1) // No foreground to draw.
-    return 0;
+  bool is_cursor = terminal->cursor_pos == Vector2(col, row);
+  bool is_cursor_hollow = is_cursor && terminal->cursor_hollow;
 
-  size_t ulen;
-  char buf[5] = {0};
+  if (is_cursor_hollow) // Don't invert fg and bg.
+  {
+    fg = color_pair.first;
+    bg = color_pair.second;
+  } else {
+    fg = color_pair.second;
+    bg = color_pair.first;
+  }
 
-  char *utf8 = tsm_ucs4_to_utf8_alloc(ch, len, &ulen);
-  memcpy(buf, utf8, ulen);
-  terminal->draw_foreground(row, col, buf, attr, color_pair.second);
+  terminal->draw_background(row, col, bg, width);
+
+  if (len >= 1 && (!attr->blink || terminal->blink_on)) {
+    /* Draw foreground */
+
+    size_t ulen;
+    char buf[5] = {0};
+
+    char *utf8 = tsm_ucs4_to_utf8_alloc(ch, len, &ulen);
+    memcpy(buf, utf8, ulen);
+    terminal->draw_foreground(row, col, buf, attr, fg);
+  }
+
+  if (is_cursor_hollow) {
+    /* Draw a hollow cursor. */
+    Vector2 pos = Vector2(col * terminal->cell_size.x + 1,
+                          row * terminal->cell_size.y + 1);
+    Rect2 rect =
+        Rect2(pos, terminal->cell_size * Vector2(width, 1) + Vector2::ONE);
+    terminal->draw_rect(rect, fg, false);
+  }
 
   return 0;
 }
@@ -307,6 +331,14 @@ void Terminal::_register_methods() {
   register_property<Terminal, int>("update_mode", &Terminal::update_mode,
                                    UpdateMode::AUTO);
 
+  register_property<Terminal, bool>("cursor_hollow", &Terminal::cursor_hollow,
+                                    true);
+
+  register_property<Terminal, bool>("blink_on", &Terminal::set_blink_on,
+                                    &Terminal::get_blink_on, true);
+  register_method("set_blink_on", &Terminal::set_blink_on);
+  register_method("get_blink_on", &Terminal::get_blink_on);
+
   register_signal<Terminal>("data_sent", "data",
                             GODOT_VARIANT_TYPE_POOL_BYTE_ARRAY);
   register_signal<Terminal>("key_pressed", "data", GODOT_VARIANT_TYPE_STRING,
@@ -323,6 +355,8 @@ Terminal::~Terminal() {}
 void Terminal::_init() {
   framebuffer_age = 0;
   update_mode = UpdateMode::AUTO;
+  blink_on = true;
+  cursor_hollow = true;
 
   if (tsm_screen_new(&screen, NULL, NULL)) {
     ERR_PRINT("Error creating new tsm screen");
@@ -349,6 +383,13 @@ void Terminal::_notification(int what) {
     break;
   }
 }
+
+void Terminal::set_blink_on(bool on) {
+  blink_on = on;
+  tsm_screen_blink(screen);
+}
+
+bool Terminal::get_blink_on() { return blink_on; }
 
 void Terminal::_gui_input(Variant event) {
   Ref<InputEventKey> k = event;
@@ -390,6 +431,9 @@ void Terminal::_draw() {
               background_color);
   }
 
+  cursor_pos =
+      Vector2(tsm_screen_get_cursor_x(screen), tsm_screen_get_cursor_y(screen));
+
   framebuffer_age = tsm_screen_draw(screen, text_draw_cb, this);
 
   if (update_mode == UpdateMode::ALL_NEXT_FRAME)
@@ -398,25 +442,34 @@ void Terminal::_draw() {
 
 void Terminal::update_theme() {
   ResourceLoader *rl = ResourceLoader::get_singleton();
+  Ref<Theme> default_theme;
 
   /* Load the default theme if it exists and no theme is set */
-  // Having an actual theme resource set allows things like like font resizing.
+  // Don't actually set the theme to default (to allow inheritence of themes),
+  // but do load default values from it.
 
   const char *default_theme_path =
       "res://addons/godot_xterm/themes/default.tres";
 
   if (!get_theme().is_valid() && rl->exists(default_theme_path)) {
-    set_theme(rl->load(default_theme_path));
+    default_theme = rl->load(default_theme_path);
   }
 
   /* Generate color palette based on theme */
 
-  auto set_pallete_color = [this](tsm_vte_color color, String theme_color,
-                                  Color default_color) -> void {
+  auto set_pallete_color = [this, default_theme](tsm_vte_color color,
+                                                 String theme_color,
+                                                 Color default_color) -> void {
     Color c;
 
-    c = has_color(theme_color, "Terminal") ? get_color(theme_color, "Terminal")
-                                           : default_color;
+    c = has_color(theme_color, "Terminal")
+            ? get_color(theme_color, "Terminal")
+            : has_color_override(theme_color)
+                  ? get_color(theme_color, "")
+                  : (default_theme != nullptr &&
+                     default_theme->has_color(theme_color, "Terminal"))
+                        ? default_theme->get_color(theme_color, "Terminal")
+                        : default_color;
 
     color_palette[color][0] = c.get_r8();
     color_palette[color][1] = c.get_g8();
@@ -475,13 +528,18 @@ void Terminal::update_theme() {
 
   /* Load fonts into the fontmap from theme */
 
-  auto set_font = [this, rl](String font_style) -> void {
+  auto load_font = [this, default_theme](String font_style) -> void {
     Ref<Font> fontref;
 
     if (has_font(font_style, "Terminal")) {
       fontref = get_font(font_style, "Terminal");
+    } else if (has_font_override(font_style)) {
+      fontref = get_font(font_style, "");
     } else if (has_font("Regular", "Terminal")) {
       fontref = get_font("Regular", "Terminal");
+    } else if (default_theme != nullptr &&
+               default_theme->has_font("Regular", "Terminal")) {
+      fontref = default_theme->get_font("Regular", "Terminal");
     } else {
       fontref = get_font("");
     }
@@ -489,12 +547,12 @@ void Terminal::update_theme() {
     fontmap.insert(std::pair<String, Ref<Font>>(font_style, fontref));
   };
 
-  set_font("Bold Italic");
-  set_font("Bold");
-  set_font("Italic");
-  set_font("Regular");
+  load_font("Bold Italic");
+  load_font("Bold");
+  load_font("Italic");
+  load_font("Regular");
 
-  update_size();
+  // update_size();
 }
 
 void Terminal::draw_background(int row, int col, Color bgcolor, int width = 1) {
@@ -521,9 +579,6 @@ void Terminal::draw_foreground(int row, int col, char *ch,
   }
 
   /* Draw the foreground */
-
-  if (attr->blink)
-    ; // TODO: Handle blink
 
   int font_height = fontref.ptr()->get_height();
   Vector2 foreground_pos =
