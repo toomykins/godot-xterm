@@ -63,9 +63,10 @@ void Pipe::close() {
   uv_run(uv_default_loop(), UV_RUN_NOWAIT);
 }
 
-godot_error Pipe::write(String p_data) {
-  char *s = p_data.alloc_c_string();
-  ULONG len = strlen(s);
+godot_error Pipe::write(PoolByteArray p_data) {
+  ULONG len = p_data.size();
+  char *s = (char *)malloc(len);
+  memcpy(s, p_data.read().ptr(), len);
 
   uv_buf_t bufs[1];
   bufs[0].base = s;
@@ -113,7 +114,7 @@ void _read_cb(uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf) {
   pipe->emit_signal("data_received", data);
 }
 
-void _write_cb(uv_write_t *req, int status) {}
+void _write_cb(uv_write_t *req, int status) { std::free(req->data); }
 
 void _alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
   buf->base = (char *)malloc(suggested_size);

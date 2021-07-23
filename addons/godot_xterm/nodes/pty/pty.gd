@@ -174,7 +174,9 @@ func write(data) -> void:
 	_write(data)
 
 
-func _write(data: String) -> void:
+func _write(data) -> void:
+	assert(data is PoolByteArray or data is String)
+	data = data if data is PoolByteArray else data.to_utf8()
 	if _pipe:
 		_pipe.write(data)
 

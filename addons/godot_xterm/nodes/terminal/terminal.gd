@@ -29,8 +29,12 @@ export (UpdateMode) var update_mode = UpdateMode.AUTO setget set_update_mode
 var cols = 2
 var rows = 2
 
+# Mouse
+
 # If true, text in the terminal will be copied to the clipboard when selected.
 export (bool) var copy_on_selection
+# If true mouse events will be emitted by the signal when clicking on the Terminal.
+export (bool) var mouse_tracking := true
 
 # Bell
 # If muted, the "bell" signal will not be emitted when the bell "\u0007" character
@@ -160,10 +164,34 @@ func _refresh():
 
 
 func _gui_input(event):
-	_native_terminal._gui_input(event)
+	#_native_terminal._gui_input(event)
 
 	if event is InputEventKey:
-		_native_terminal.sb_reset()  # Return to bottom of scrollback buffer if we scrolled up.
+		pass
+		_native_terminal._gui_input(event)
+		#_native_terminal.sb_reset()  # Return to bottom of scrollback buffer if we scrolled up.
+
+	# Mouse tracking.
+	# Reference: https://www.xfree86.org/current/ctlseqs.html#Mouse%20Tracking
+	if mouse_tracking:
+		if event is InputEventMouseButton:
+			var b: int
+			if event.pressed:
+				if event.button_index == BUTTON_LEFT:
+					b = 0
+				if event.button_index == BUTTON_RIGHT:
+					b = 1
+				if event.button_index == BUTTON_MIDDLE:
+					b = 2
+			else:
+				b = 3
+
+			# Xterm coords start at 1,1 for the top/leftmost cell.
+			var position: Vector2 = _mouse_to_cell(get_local_mouse_position()) + Vector2.ONE
+			var e = "\u001b[M".to_ascii()
+			print(_native_terminal.cell_size)
+			e = PoolByteArray([0x1b, 0x5b, 0x4d, b + 32, position.x + 32, position.y + 32])
+			emit_signal("data_sent", e)
 
 	_handle_mouse_wheel(event)
 	_handle_selection(event)
