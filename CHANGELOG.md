@@ -6,9 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+[Unreleased]: https://github.com/lihop/godot-xterm/compare/v2.0.0...HEAD
 
 
 ## [v2.0.0] - 2021-07-25
+[v2.0.0]: https://github.com/lihop/godot-xterm/compare/v1.2.1...v2.0.0
 ### Added
 - Terminal editor plugin. Adds integrated terminal to Godot editor.
 - Xresources import plugin.
@@ -35,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [v1.2.1] - 2020-11-23
+[v1.2.1]: https://github.com/lihop/godot-xterm/compare/v1.2.0...v1.2.1
 ### Changed
 - GitHub Actions workflow now produces both a release and debug zip archive.
 
@@ -43,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [v1.2.0] - 2020-11-21
+[v1.2.0]: https://github.com/lihop/godot-xterm/compare/v1.0.0...v1.2.0
 ### Added
 - Support for macOS 64-bit including Pseudoterminal.
 - Partial support for Windows 64-bit and compiling on Windows using MSVC. Pseudoterminal not yet supported. 32-bit builds might be possible but not yet built/tested.
@@ -58,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [v1.0.0] - 2020-10-05
+[v1.0.0]: https://github.com/lihop/godot-xterm/releases/tag/v1.0.0
 ### Added
 - Changelog.
 - Asciicast importer plugin. Enables the import of .cast ([asciicast files v2](https://github.com/asciinema/asciinema/blob/master/doc/asciicast-v2.md)) that can be made using the [asciinema](https://asciinema.org/) terminal session recorder. See the [asciicast scene](/examples/asciicast) for example usage.
@@ -67,10 +72,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implementation of Terminal node from GDScript to GDNative using [Aetf's patched version of libtsm](https://github.com/Aetf/libtsm).
 - Move input handling to the Terminal node itself, rather than handling it in a seperate Control node.
 - The Terminal `write()` method now accepts both String and PoolByteArray.
-
-
-[Unreleased]: https://github.com/lihop/godot-xterm/compare/v2.0.0...HEAD
-[v2.0.0]: https://github.com/lihop/godot-xterm/compare/v1.2.1...v2.0.0
-[v1.2.1]: https://github.com/lihop/godot-xterm/compare/v1.2.0...v1.2.1
-[v1.2.0]: https://github.com/lihop/godot-xterm/compare/v1.0.0...v1.2.0
-[v1.0.0]: https://github.com/lihop/godot-xterm/releases/tag/v1.0.0
