@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 [Unreleased]: https://github.com/lihop/godot-xterm/compare/v2.0.0...HEAD
+### Removed
+- TerminalSettings resource. Not currently used, and was showing up in every 'new resource' menu that is displayed after clicking on an empty Resource slot.
 
 
 ## [v2.0.0] - 2021-07-25
