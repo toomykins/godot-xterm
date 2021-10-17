@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 [Unreleased]: https://github.com/lihop/godot-xterm/compare/v2.0.0...HEAD
+### Added
+- Basic readline utility that provides line editing capabilities similar to GNU Readline.
+
 ### Removed
 - TerminalSettings resource. Not currently used, and was showing up in every 'new resource' menu that is displayed after clicking on an empty Resource slot.
 
