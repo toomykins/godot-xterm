@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Registered `pipe.close()` method, so `kill()` can be called when using unix PTY node.
+
 
 ## [v2.0.0] - 2021-07-25
 ### Added
