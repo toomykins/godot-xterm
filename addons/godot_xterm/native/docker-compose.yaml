@@ -12,3 +12,14 @@ services:
         scons platform=javascript target=$${TARGET:-debug} -j$$(nproc)
         cd /src
         scons platform=javascript target=$${TARGET:-debug} -j$$(nproc)
+  linux:
+    build: .
+    user: ${UID_GID}
+    volumes:
+      - .:/src
+    command:
+      - /bin/bash
+      - -c
+      - |
+        cd /src
+        /bin/bash ./build.sh --target ${TARGET} --bits ${BITS}

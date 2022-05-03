@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- `--docker` option to `build.sh` script, in order to build Linux binaries inside a docker container with an older GLIBC version.
+
+### Changed
+- GitHub Actions workflow to build Linux debug/release binaries inside docker container in order to target older GLIBC versions.
 
 ### Fixed
 - Registered `pipe.close()` method, so `kill()` can be called when using unix PTY node.
