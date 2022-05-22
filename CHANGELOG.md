@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/lihop/godot-xterm/compare/v2.0.0...HEAD)
 ### Added
+- Automatic download of missing gdnative libraries from GitHub releases using the version defined in `addons/godot_xterm/plugin.cfg`.
 - `--docker` option to `build.sh` script, in order to build Linux binaries inside a docker container with an older GLIBC version.
 
 ### Changed
