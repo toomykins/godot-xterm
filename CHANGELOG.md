@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--docker` option to `build.sh` script, in order to build Linux binaries inside a docker container with an older GLIBC version.
 
 ### Changed
+- Target Godot version from 3.3.2-stable -> 3.4.4-stable.
 - GitHub Actions workflow to build Linux debug/release binaries inside docker container in order to target older GLIBC versions.
 
 ### Fixed
