@@ -62,6 +62,8 @@ opts.Add(EnumVariable(
     allowed_values=('debug', 'release'),
     ignorecase=2
 ))
+opts.Add(BoolVariable("use_mingw",
+         "Use the MinGW compiler instead of MSVC - only effective on Windows", False))
 opts.Add(EnumVariable("macos_arch", "Target macOS architecture",
          "universal", ["universal", "x86_64", "arm64"]))
 opts.Add(BoolVariable(
@@ -255,7 +257,7 @@ env.Append(LIBS=[
         env['target'],
         'wasm' if env['platform'] == 'javascript' else env['macos_arch'] if (
             env['macos_arch'] != 'universal' and env['platform'] == 'osx') else env['bits'],
-        env['LIBSUFFIX'],
+        '.a' if env['use_mingw'] else env['LIBSUFFIX'],
     )),
     env.File('thirdparty/libtsm/build/bin/libtsm.{}.{}.{}{}'.format(
         env['platform'],
@@ -280,15 +282,26 @@ else:
         sources.append('src/node_pty/unix/pty.cc')
         env.Append(LIBS=['util', env.File('thirdparty/libuv/build/libuv_a.a')])
     else:
+        #sources.append('src/node_pty/win/path_util.cc')
         #sources.append('src/node_pty/win/conpty.cc')
-        env.Append(LIBS=[
-            env.File('thirdparty/libuv/build/{}/uv_a.lib'.format(env["target"].capitalize())),
-            'Advapi32.lib',
-            'Iphlpapi.lib',
-            'user32.lib',
-            'userenv.lib',
-            'Ws2_32.lib',
-        ])
+        #sources.append('src/node_pty/win/winpty.cc')
+        if env['use_mingw'] and not env["disable_pty"]:
+            env.Append(LIBS=[
+                env.File('thirdparty/libuv/build/libuv.dll.a'),
+                '-lshlwapi'
+            ])
+            Execute([
+                Copy('bin/libuv.dll', 'thirdparty/libuv/build/libuv.dll'),
+            ])
+        else:
+            env.Append(LIBS=[
+                env.File('thirdparty/libuv/build/{}/uv_a.lib'.format(env["target"].capitalize())),
+                'Advapi32.lib',
+                'Iphlpapi.lib',
+                'user32.lib',
+                'userenv.lib',
+                'Ws2_32.lib',
+            ])
 
 if env['platform'] == 'linux':
     libsuffix = "a"

@@ -36,7 +36,7 @@ services:
       - |
         target=$${TARGET:-release}
         bits=$${BITS:-'64'}
-        mkdir build 2>/dev/null ;
+        mkdir build 2>/dev/null
         args="-DCMAKE_BUILD_TYPE=$$target \
           -DBUILD_SHARED_LIBS=OFF \
           -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE"
@@ -57,3 +57,57 @@ services:
     volumes:
       - .:/godot-xterm
     working_dir: /godot-xterm
+  godot-cpp-windows:
+    user: ${UID_GID}
+    build:
+      context: .
+      dockerfile: windows.Dockerfile
+    volumes:
+      - ./thirdparty/godot-cpp:/godot-cpp
+    working_dir: /godot-cpp
+    command:
+      - /bin/bash
+      - -c
+      - |
+        scons platform=windows use_mingw=yes generate_bindings=yes target=$${TARGET:-release} bits=$${BITS:-64} -j$$(nproc)
+  libuv-windows:
+    user: ${UID_GID}
+    build:
+      context: .
+      dockerfile: windows.Dockerfile
+    volumes:
+      - ./thirdparty/libuv:/libuv
+    working_dir: /libuv
+    command:
+      - /bin/bash
+      - -c
+      - |
+        target=$${TARGET:-release}
+        bits=$${BITS:-'64'}
+        mkdir build 2>/dev/null
+        args="-DCMAKE_BUILD_TYPE=$$target \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE"
+        if [[ $$bits -eq 32 ]]; then
+          args="$$args -DCMAKE_SYSTEM_PROCESSOR=i686 -DCMAKE_C_FLAGS=-m32"
+          args="$$args -DCMAKE_TOOLCHAIN_FILE=/mingw-w64-i686.cmake"
+        else
+          args="$$args -DCMAKE_SYSTEM_PROCESSOR=x86_64 -DCMAKE_C_FLAGS="
+          args="$$args -DCMAKE_TOOLCHAIN_FILE=/mingw-w64-x86_64.cmake"
+        fi
+        pushd build
+        cmake .. $$args
+        popd
+        cmake --build build
+  libgodot-xterm-windows:
+    user: ${UID_GID}
+    build:
+      context: .
+      dockerfile: windows.Dockerfile
+    volumes:
+      - .:/godot-xterm
+    working_dir: /godot-xterm
+    command:
+      - /bin/bash
+      - -c
+      - scons platform=windows use_mingw=yes target=$${TARGET:-release} bits=$${BITS:-64} -j$$(nproc)

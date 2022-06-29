@@ -14,13 +14,17 @@ env:
 
 jobs:
   build_docker:
-    name: 'Build Docker (linux, ${{ matrix.target }}, ${{ matrix.bits }})'
+    name: 'Build Docker (${{ matrix.platform }}, ${{ matrix.target }}, ${{ matrix.bits }})'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        platform: [ linux, windows ]
         target: [ release, debug ]
         bits: [ 64, 32 ]
+        exclude:
+          - platform: windows
+            bits: 32 # 32-bit MinGW builds not currently working.
     steps:
       - uses: actions/checkout@v2
         with:
@@ -29,7 +33,7 @@ jobs:
         uses: ./.github/actions/cache-submodules
         id: cache-submodules
         with:
-          platform: linux
+          platform: ${{ matrix.platform }}
           target: ${{ matrix.target }}
           bits: ${{ matrix.bits }}
       - name: Pull docker images
@@ -42,20 +46,21 @@ jobs:
         if: steps.cache-submodules.outputs.cache-hit != 'true'
         working-directory: addons/godot_xterm/native
         run: |
-          docker-compose build godot-cpp-linux
-          UID_GID="$(id -u):$(id -g)" docker-compose run -e TARGET=${{ matrix.target }} -e BITS=${{ matrix.bits }} godot-cpp-linux
+          docker-compose build godot-cpp-${{ matrix.platform }}
+          UID_GID="$(id -u):$(id -g)" docker-compose run -e TARGET=${{ matrix.target }} -e BITS=${{ matrix.bits }} godot-cpp-${{ matrix.platform }}
       - name: Build libuv
         if: steps.cache-submodules.outputs.cache-hit != 'true'
         working-directory: addons/godot_xterm/native
-        run: UID_GID="$(id -u):$(id -g)" docker-compose run -e TARGET=${{ matrix.target }} -e BITS=${{ matrix.bits }} libuv-linux
+        run: UID_GID="$(id -u):$(id -g)" docker-compose run -e TARGET=${{ matrix.target }} -e BITS=${{ matrix.bits }} libuv-${{ matrix.platform }}
       - name: Build libgodot-xterm
         working-directory: addons/godot_xterm/native
-        run: UID_GID="$(id -u):$(id -g)" docker-compose run -e TARGET=${{ matrix.target }} -e BITS=${{ matrix.bits }} libgodot-xterm-linux
+        run: UID_GID="$(id -u):$(id -g)" docker-compose run -e TARGET=${{ matrix.target }} -e BITS=${{ matrix.bits }} libgodot-xterm-${{ matrix.platform }}
       - name: Upload binaries
         uses: actions/upload-artifact@v2
         with:
           name: libgodot-xterm-${{ matrix.target }}
           path: |
+            addons/godot_xterm/native/bin/*.dll
             addons/godot_xterm/native/bin/*.so
 
   build_native:
@@ -125,7 +130,7 @@ jobs:
           scons platform=${{ matrix.platform }} target=${{ matrix.target }} bits=${{ matrix.bits }} generate_bindings=yes -j2
       - name: Setup cmake
         if: steps.cache-submodules.outputs.cache-hit != 'true'
-        uses: jwlawson/actions-setup-cmake@v1.9
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: '3.23.2'
           use-32bit: ${{ matrix.bits == 32 && matrix.os == 'windows-latest' }}
@@ -160,13 +165,14 @@ jobs:
           cd addons/godot_xterm/native
           scons platform=${{ matrix.platform }} target=${{ matrix.target }} bits=${{ matrix.bits }} -j2
       - name: Upload binaries
+        if: ${{ matrix.os != 'windows-latest' && matrix.bits != '64' }}
         uses: actions/upload-artifact@v2
         with:
           name: libgodot-xterm-${{ matrix.target }}
           path: |
+            addons/godot_xterm/native/bin/*.dll
             addons/godot_xterm/native/bin/*.wasm
             addons/godot_xterm/native/bin/*.dylib
-            addons/godot_xterm/native/bin/*.dll
 
   html5_export:
     name: 'HTML5 Export'

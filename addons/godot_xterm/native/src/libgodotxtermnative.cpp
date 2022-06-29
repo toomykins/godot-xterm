@@ -5,11 +5,12 @@
 #include "pipe.h"
 #if defined(__linux__) || defined(__APPLE__)
 #include "node_pty/unix/pty.h"
-#endif
+#endif // defined(__linux__) || defined(__APPLE__)
 #if defined(__WIN32)
 //#include "node_pty/win/conpty.h"
-#endif
-#endif
+//#include "node_pty/win/winpty.h"
+#endif // defined(__WIN32)
+#endif // !defined(_PTY_DISABLED)
 
 extern "C" void GDN_EXPORT godot_gdnative_init(godot_gdnative_init_options *o) {
   godot::Godot::gdnative_init(o);
@@ -31,6 +32,7 @@ extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
 #endif
 #if defined(__WIN32)
   // godot::register_tool_class<godot::ConPTY>();
+  // godot::register_tool_class<godot::WinPTY>();
 #endif
 #endif
 }

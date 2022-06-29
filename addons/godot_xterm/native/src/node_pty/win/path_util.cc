@@ -2,22 +2,16 @@
  * Copyright (c) 2013-2015, Christopher Jeffrey, Peter Sunde (MIT License)
  * Copyright (c) 2016, Daniel Imms (MIT License).
  * Copyright (c) 2018, Microsoft Corporation (MIT License).
+ * Copyright (c) 2022, Leroy Hopson (MIT License).
  */
 
-#include <Shlwapi.h> // PathCombine
-#include <nan.h>
-
 #include "path_util.h"
+#include <shlwapi.h> // PathCombine
+#include <vector>
 
 namespace path_util {
 
-const wchar_t *to_wstring(const Nan::Utf8String &str) {
-  const char *bytes = *str;
-  unsigned int sizeOfStr = MultiByteToWideChar(CP_UTF8, 0, bytes, -1, NULL, 0);
-  wchar_t *output = new wchar_t[sizeOfStr];
-  MultiByteToWideChar(CP_UTF8, 0, bytes, -1, output, sizeOfStr);
-  return output;
-}
+const wchar_t *to_wstring(String str) { return str.unicode_str(); }
 
 bool file_exists(std::wstring filename) {
   DWORD attr = ::GetFileAttributesW(filename.c_str());

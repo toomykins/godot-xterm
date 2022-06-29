@@ -17,7 +17,7 @@ runs:
       working-directory: addons/godot_xterm/native/thirdparty
       shell: bash
       run: |
-        cache_version=1 # Increment this number to invalidate the cache.
+        cache_version=2 # Increment this number to invalidate the cache.
         godot_cpp_rev=$(git ls-tree HEAD godot-cpp --object-only)
         libuv_rev=$(git ls-tree HEAD libuv --object-only)
         libtsm_rev=$(git ls-tree HEAD libtsm --object-only)
