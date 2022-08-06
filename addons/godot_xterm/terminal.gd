@@ -82,6 +82,7 @@ func write(data) -> void:
 
 	# Will be cleared when _flush() is called after VisualServer emits the "frame_pre_draw" signal.
 	_buffer.push_back(data)
+	update()  # Queue the CanvasItem for updates. Ensures VisualServer will draw a frame, otherwise it might not.
 
 
 func _flush():

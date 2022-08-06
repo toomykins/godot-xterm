@@ -23,6 +23,13 @@ const Signal = _PTYUnix.Signal
 signal data_received(data)
 signal exited(exit_code, signum)
 
+enum ProcessMode {
+	IDLE,
+	PHYSICS,
+}
+
+export(ProcessMode) var process_mode := ProcessMode.IDLE
+
 export(NodePath) var terminal_path := NodePath() setget set_terminal_path
 
 var _terminal: _Terminal = null setget _set_terminal
@@ -148,6 +155,16 @@ func open(cols: int = DEFAULT_COLS, rows: int = DEFAULT_ROWS) -> Array:
 
 func get_master():
 	return _pty_native.get_master()
+
+
+func _process(delta: float):
+	if process_mode == ProcessMode.IDLE:
+		_pty_native.run_process(delta)
+
+
+func _physics_process(delta: float):
+	if process_mode == ProcessMode.PHYSICS:
+		_pty_native.run_process(delta)
 
 
 func _on_pty_native_data_received(data):

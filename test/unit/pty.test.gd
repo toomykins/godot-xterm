@@ -1,25 +1,36 @@
 extends "res://addons/gut/test.gd"
 
 
-class MockPTY:
-	extends "res://addons/godot_xterm/nodes/pty/pty_native.gd"
-
-	func write(data):
-		emit_signal("data_received", data)
-
-
 class BaseTest:
 	extends "res://addons/gut/test.gd"
 	const PTY := preload("res://addons/godot_xterm/pty.gd")
+	const MockPTYPath := "res://test/mocks/mock_pty_native.gd"
+	const MockPTY := preload(MockPTYPath)
 
 	var pty: PTY
 	var mock_pty_native: MockPTY
 
 	func before_each():
 		pty = add_child_autofree(PTY.new())
-		mock_pty_native = autofree(MockPTY.new())
+		mock_pty_native = autofree(double(MockPTYPath).new())
 		pty._pty_native = mock_pty_native
 		watch_signals(mock_pty_native)
+
+
+class TestProcessMode:
+	extends BaseTest
+
+	func test_updates_only_during_idle_time():
+		pty.process_mode = PTY.ProcessMode.IDLE
+		for _i in range(4):
+			yield(get_tree(), "idle_frame")
+		assert_between(get_call_count(mock_pty_native, "run_process"), 3, 4)
+
+	func test_updates_only_during_physics_step():
+		pty.process_mode = PTY.ProcessMode.PHYSICS
+		for _i in range(4):
+			yield(get_tree(), "physics_frame")
+		assert_between(get_call_count(mock_pty_native, "run_process"), 3, 4)
 
 
 class TestPTYInterfaceGodotXterm2_0_0:

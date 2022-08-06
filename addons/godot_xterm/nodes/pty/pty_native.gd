@@ -9,6 +9,10 @@ func open(cols: int, rows: int):
 	return _not_implemented()
 
 
+func run_process(delta: float):
+	return _not_implemented()
+
+
 func resize(cols: int, rows: int):
 	return _not_implemented()
 

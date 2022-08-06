@@ -91,6 +91,11 @@ func write(data) -> void:
 		_pipe.write(data)
 
 
+func run_process(_delta):
+	if _pipe:
+		_pipe.poll()
+
+
 func resize(cols: int, rows: int) -> void:
 	if cols <= 0 or rows <= 0 or cols == NAN or rows == NAN or cols == INF or rows == INF:
 		push_error("Resizing must be done using positive cols and rows.")
@@ -124,11 +129,6 @@ func _parse_env(env: Dictionary = {}) -> PoolStringArray:
 		pairs.append("%s=%s" % [key, value])
 
 	return pairs
-
-
-func _process(_delta):
-	if _pipe:
-		_pipe.poll()
 
 
 func fork(
