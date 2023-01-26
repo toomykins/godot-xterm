@@ -25,8 +25,8 @@ jobs:
           name: imports-${{ matrix.os }}
           path: .godot/
 
-  build_docker:
-    name: 'Build Docker'
+  build_linux:
+    name: 'Build Linux'
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
