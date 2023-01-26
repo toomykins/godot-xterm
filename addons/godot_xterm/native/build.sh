@@ -38,7 +38,7 @@ NATIVE_DIR="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 # Run script inside a nix shell if it is available.
 if command -v nix-shell && [ $NIX_PATH ] && [ -z $IN_NIX_SHELL ]; then
 	cd ${NATIVE_DIR}
-	nix-shell --pure --run "NIX_PATH=${NIX_PATH} ./build.sh $args"
+	nix-shell --pure --keep SCONS_CACHE --run "NIX_PATH=${NIX_PATH} ./build.sh $args"
 	exit
 fi
 
@@ -75,8 +75,6 @@ cmake --build build --config $target -j$nproc
 cd ${NATIVE_DIR}
 scons target=template_$target arch=$(uname -m) disable_pty=$disable_pty
 
-# Use Docker to build libgodot-xterm javascript.
-#if [ -x "$(command -v docker-compose)" ]; then
-#	UID_GID="0:0" TARGET=$target docker-compose build javascript
-#	UID_GID="$(id -u):$(id -g)" TARGET=$target docker-compose run --rm javascript
-#fi
+# Use the following commands to build libgodot-xterm for HTML5 using Docker.
+# UID_GID="0:0" TARGET=$target docker-compose build javascript
+# UID_GID="$(id -u):$(id -g)" TARGET=$target docker-compose run --rm javascript

@@ -42,3 +42,12 @@ runs:
         restore-keys: |
           scons-${{ inputs.platform }}-${{ inputs.arch }}-${{ inputs.target }}-${{ steps.hash.outputs.hash }}-
           scons-${{ inputs.platform }}-${{ inputs.arch }}-${{ inputs.target }}-
+    - name: EMScripten cache
+      if: ${{ inputs.platform == 'javascript' }}
+      uses: actions/cache@v3
+      with:
+        path: emsdk-cache-${{ matrix.target }}
+        key: emsdk-cache-${{ matrix.target }}-${{ steps.hash.outputs.hash }}-${{ hashFiles('**/*.c*', '**/*.h*') }}
+        restore-keys: |
+          emsdk-cache-${{ matrix.target }}-${{ steps.hash.outputs.hash }}-
+          emsdk-cache-${{ matrix.target }}-
