@@ -1,6 +1,7 @@
 with (import <nixpkgs> {});
 mkShell {
   buildInputs = with pkgs; [
+    bash
     git
     scons
 

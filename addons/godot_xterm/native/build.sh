@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # SPDX-FileCopyrightText: 2020-2023 Leroy Hopson <godot-xterm@leroy.geek.nz>
 # SPDX-License-Identifier: MIT
@@ -58,7 +58,7 @@ updateSubmodules GODOT_CPP_DIR ${NATIVE_DIR}/thirdparty/godot-cpp
 
 # Build libuv as a static library.
 cd ${LIBUV_DIR}
-mkdir build || true
+mkdir -p build || true
 cd build
 args="-DCMAKE_BUILD_TYPE=$target -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
 	-DCMAKE_OSX_ARCHITECTURES=$(uname -m)"
@@ -69,12 +69,14 @@ else
 fi
 cmake .. $args
 cd ..
-cmake --build build --config $target -j$nproc
+cmake --build build --config $target
 
 # Build libgodot-xterm.
 cd ${NATIVE_DIR}
 scons target=template_$target arch=$(uname -m) disable_pty=$disable_pty
 
-# Use the following commands to build libgodot-xterm for HTML5 using Docker.
-# UID_GID="0:0" TARGET=$target docker-compose build javascript
-# UID_GID="$(id -u):$(id -g)" TARGET=$target docker-compose run --rm javascript
+# Use Docker to build libgodot-xterm javascript.
+if [ -x "$(command -v docker-compose)" ]; then
+	UID_GID="0:0" TARGET=$target docker-compose build javascript
+	UID_GID="$(id -u):$(id -g)" TARGET=$target docker-compose run --rm javascript
+fi
